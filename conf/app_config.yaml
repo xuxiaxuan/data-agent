@@ -1,11 +1,11 @@
 logging:
-  file:
+  file: # 日志输出到日志文件
     enable: true
     level: INFO
-    path: logs
-    rotation: "10 MB"
-    retention: "7 days"
-  console:
+    path: logs # 路径
+    rotation: "10 MB" # 日志文件截断大小
+    retention: "7 days" # 日志保留时长
+  console: # 日志输出到控制台
     enable: true
     level: INFO
 
