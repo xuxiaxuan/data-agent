@@ -24,7 +24,7 @@ class MysqlClientManager:
         await self.engine.dispose()
 
 meta_mysql_client_manager = MysqlClientManager(app_config.db_meta)
-dw_mysql_client_manager = MysqlClientManager(app_config.db_dw )
+dw_mysql_client_manager = MysqlClientManager(app_config.db_dw)
 
 if __name__ == '__main__':
     dw_mysql_client_manager.init()
