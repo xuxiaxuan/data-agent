@@ -3,17 +3,22 @@ from pathlib import Path
 from omegaconf import OmegaConf
 
 from app.conf.meta_config import MetaConfig
+from app.entities.column_info import ColumnInfo
+from app.entities.table_info import TableInfo
 from app.models.column_info_mysql import ColumnInfoMysql
 from app.models.table_info_mysql import TableInfoMySQL
 from app.repositories.mysql.dw import dw_mysql_repository
 from app.repositories.mysql.dw.dw_mysql_repository import DwMysqlRepository
+from app.repositories.mysql.meta import meta_mysql_repository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMysqlRepository
+from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 
 
 class MetaKnowledgeService:
-    def __init__(self, meta_mysql_repository: MetaMysqlRepository, dw_mysql_repository: DwMysqlRepository):
+    def __init__(self, meta_mysql_repository: MetaMysqlRepository, dw_mysql_repository: DwMysqlRepository, column_qdrant_repository: ColumnQdrantRepository):
         self.meta_mysql_repository = meta_mysql_repository
         self.dw_mysql_repository = dw_mysql_repository
+        self.column_qdrant_repository = column_qdrant_repository
 
     async def build(self, config_path: Path):
         # 1.读取配置文件
@@ -27,16 +32,17 @@ class MetaKnowledgeService:
             column_infors : list[ColumnInfoMysql] = []
             # 配置文件中有表信息
             for table in meta_config.tables:
-                table_infor = TableInfoMySQL(
+                table_info = TableInfo(
                     id = table.name,
                     name = table.name,
+                    role = table.role,
                     description = table.description,
                 )
-                table_infos.append(table_infor)
+                table_infos.append(table_info)
                 columns_types = await self.dw_mysql_repository.get_column_types(table.name)
                 for column in table.columns:
                     column_values = await self.dw_mysql_repository.get_column_values(column.name, table.name)
-                    column_infor = ColumnInfoMysql(
+                    column_info = ColumnInfo(
                         id = f"{table.name}.{column.name}",
                         name = column.name,
                         type = columns_types[column.name],
@@ -46,11 +52,11 @@ class MetaKnowledgeService:
                         alias = column.alias,
                         table_id = table.name,
                     )
-                    column_infors.append(column_infor)
-            # 同步表信息
-            print(table_infos)
-            print("="*100)
-            print(column_infors)
+                    column_infors.append(column_info)
+            # 保存表信息和列信息
+            async with self.meta_mysql_repository.session.begin():
+                self.meta_mysql_repository.save_table_infos(table_infos)
+                self.meta_mysql_repository.save_column_values(column_infors)
 
         if meta_config.metrics:
             # 配置文件中有指标信息
