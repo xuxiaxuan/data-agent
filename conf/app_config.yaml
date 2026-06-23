@@ -41,6 +41,6 @@ es:
 
 
 llm:
-  model_name: gpt-5.2-codex
-  api_key: <api-key>
-  base_url: https://api.openai-proxy.org/v1
+  model_name: qwen2.5:3b
+  api_key: "" # ollama本地无需密钥，填空即可
+  base_url: http://localhost:11434

@@ -4,6 +4,6 @@ from app.agent.context import DataAgentContext
 from app.agent.state import DataAgentState
 
 
-async def filter_table(state: DataAgentState, runtime: Runtime[DataAgentContext]):
+async def execute_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]):
     writer = runtime.stream_writer
-    writer({"type": "progress", "step": "过滤表格", "status": "running"})
+    writer({"type": "progress", "step": "执行SQL", "status": "running"})
