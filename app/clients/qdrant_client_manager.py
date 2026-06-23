@@ -18,7 +18,7 @@ class QdrantClientManager:
         self.client = AsyncQdrantClient(self._get_url())
 
     async def close(self):
-        self.client.close()
+        await self.client.close()
 
 qdrant_client_manager = QdrantClientManager(app_config.qdrant)
 

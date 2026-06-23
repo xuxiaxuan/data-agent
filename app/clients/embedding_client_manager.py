@@ -21,6 +21,20 @@ class LocalOpenAIEmbedding:
                 data = await resp.json()
                 return data["data"][0]["embedding"]
 
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        """批量文本异步向量化（补上缺失方法）"""
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                self.url,
+                json={
+                    "input": texts,
+                    "model": "bge"
+                }
+            ) as resp:
+                data = await resp.json()
+                # 按顺序取出每条向量
+                embeddings = [item["embedding"] for item in data["data"]]
+                return embeddings
 
 class EmbeddingClientManager:
     def __init__(self, config: EmbeddingConfig):
