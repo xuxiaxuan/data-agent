@@ -19,7 +19,12 @@ from app.agent.nodes.correct_sql import correct_sql
 from app.agent.nodes.execute_sql import execute_sql
 from app.agent.state import DataAgentState
 from app.clients.embedding_client_manager import embedding_client_manager
+from app.clients.es_client_manager import es_client_manager
+from app.clients.mysql_client_manager import meta_mysql_client_manager, dw_mysql_client_manager
 from app.clients.qdrant_client_manager import qdrant_client_manager
+from app.repositories.es.value_es_repository import ValueEsRepository
+from app.repositories.mysql.dw.dw_mysql_repository import DwMysqlRepository
+from app.repositories.mysql.meta.meta_mysql_repository import MetaMysqlRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 
@@ -70,15 +75,32 @@ if __name__ == '__main__':
     async def test():
         embedding_client_manager.init()
         qdrant_client_manager.init()
-        column_qdrant_repository = ColumnQdrantRepository(qdrant_client_manager.client)
-        metric_qdrant_repository = MetricQdrantRepository(qdrant_client_manager.client)
-        state = DataAgentState(query="统计去年各地区的销售总额")
-        context = DataAgentContext(
-            column_qdrant_repository=column_qdrant_repository,
-            metric_qdrant_repository=metric_qdrant_repository,
-            embedding_client=embedding_client_manager.client,
-        )
-        async for chunk in graph.astream(input=state, context=context, stream_mode="custom"):
-            print(chunk)
+        es_client_manager.init()
+        meta_mysql_client_manager.init()
+        dw_mysql_client_manager.init()
+
+        async with meta_mysql_client_manager.session_factory() as meta_session, dw_mysql_client_manager.session_factory() as dw_session:
+            meta_mysql_repository = MetaMysqlRepository(meta_session)
+            dw_mysql_repository = DwMysqlRepository(dw_session)
+            column_qdrant_repository = ColumnQdrantRepository(qdrant_client_manager.client)
+            value_es_repository = ValueEsRepository(es_client_manager.client)
+            metric_qdrant_repository = MetricQdrantRepository(qdrant_client_manager.client)
+
+            context = DataAgentContext(
+                embedding_client=embedding_client_manager.client,
+                column_qdrant_repository=column_qdrant_repository,
+                value_es_repository=value_es_repository,
+                metric_qdrant_repository=metric_qdrant_repository,
+                meta_mysql_repository=meta_mysql_repository,
+                dw_mysql_repository=dw_mysql_repository
+            )
+            state = DataAgentState(query="统计去年各地区的销售总额")
+            async for chunk in graph.astream(input=state, context=context, stream_mode="custom"):
+                print(chunk)
+
+        await qdrant_client_manager.close()
+        await es_client_manager.close()
+        await meta_mysql_client_manager.close()
+        await dw_mysql_client_manager.close()
 
     asyncio.run(test())

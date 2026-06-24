@@ -32,3 +32,14 @@ class ValueEsRepository(Repository):
                 operations.append({"index": {"_index": self.index_name, "_id": value_info.id}})
                 operations.append(asdict(value_info))
             await self.client.bulk(operations=operations)
+
+    async def search(self, keyword: str, score_threshold: float = 0.6, limit: int = 5) -> list[ValueInfo]:
+        result = await self.client.search(index=self.index_name,
+                                          query={
+                                              "match": {
+                                                  "value": keyword
+                                              }
+                                          },
+                                          min_score=score_threshold,
+                                          size=limit)
+        return [ValueInfo(**hit['_source']) for hit in result['hits']['hits']]
