@@ -18,3 +18,18 @@ class DwMysqlRepository():
         sql = f"select distinct {column_name} from {table_name} limit {limit}"
         result = await self.session.execute(text(sql))
         return [row[0] for row in result.fetchall()]
+
+    async def get_db_info(self):
+        result = await self.session.execute(text("select version()"))
+        version = result.scalar()
+
+        dialect = self.session.get_bind().dialect.name
+
+        return {'version': version, 'dialect': dialect}
+
+    async def validate_sql(self, sql):
+        await self.session.execute(text(f"explain {sql}"))
+
+    async def execute_sql(self, sql):
+        result = await self.session.execute(text(sql))
+        return [dict(row) for row in result.mappings().fetchall()]
