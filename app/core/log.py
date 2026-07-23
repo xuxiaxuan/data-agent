@@ -1,4 +1,3 @@
-import asyncio
 import sys
 from pathlib import Path
 
@@ -39,33 +38,3 @@ if app_config.logging.file.enable:
         retention=app_config.logging.file.retention,
         encoding="utf-8"
     )
-
-if __name__ == '__main__':
-    async def graph(request: str):
-        # 打印日志
-        logger.info(request)
-
-
-    async def test1():
-        # 接收到请求
-        request_id_ctx_var.set("request-1")
-
-        # 模拟处理
-        await asyncio.sleep(1)
-        await graph("request-1")
-
-
-    async def test2():
-        # 接收到请求
-        request_id_ctx_var.set("request-2")
-
-        # 模拟处理
-        await asyncio.sleep(1)
-        await graph("request-2")
-
-
-    async def main():
-        await asyncio.gather(test1(), test2())
-
-
-    asyncio.run(main())

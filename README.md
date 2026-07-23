@@ -28,7 +28,7 @@
 | 日志 | loguru |
 | 依赖管理 | uv（Python ≥ 3.13） |
 
-### 前端 (`data-agent-fronted/`)
+### 前端 (`data-agent-frontend/`)
 
 | 分类 | 技术 |
 |------|------|
@@ -54,7 +54,7 @@ data-agent/
 │   ├── app_config.yaml         #   应用主配置
 │   └── meta_config.yaml        #   元数据知识库配置
 ├── prompts/                    # Prompt 模板（生成/校验/纠错 SQL 等）
-├── data-agent-fronted/         # 前端项目（Vue 3 + Vite）
+├── data-agent-frontend/        # 前端项目（Vue 3 + Vite）
 ├── main.py                     # 后端入口（端口 8000）
 ├── pyproject.toml              # Python 依赖声明
 └── uv.lock                     # 依赖锁文件
@@ -77,6 +77,10 @@ data-agent/
 # 安装依赖
 uv sync
 
+# 复制环境变量模板并填入真实密码（数据库等敏感信息）
+cp .env.example .env
+# 编辑 .env 填入 DB_META_PASSWORD / DB_DW_PASSWORD 等
+
 # 按实际环境编辑配置
 #   conf/app_config.yaml      数据库、模型、服务等
 #   conf/meta_config.yaml     元数据知识库
@@ -88,7 +92,7 @@ python main.py
 ### 前端启动
 
 ```bash
-cd data-agent-fronted
+cd data-agent-frontend
 npm install
 npm run dev
 ```

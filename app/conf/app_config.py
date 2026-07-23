@@ -1,6 +1,8 @@
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
 from app.conf.config_loader import load_config
@@ -78,9 +80,13 @@ class AppConfig:
 
 
 config_file = Path(__file__).parents[2] / 'conf' / 'app_config.yaml'
+
+# 加载 .env 到环境变量（项目根目录）
+load_dotenv(Path(__file__).parents[2] / ".env")
+
+# 注册 ${env:VAR_NAME} 解析器，未设置时返回空字符串
+OmegaConf.register_new_resolver("env", lambda name: os.environ.get(name, ""), replace=True)
+
 context = OmegaConf.load(config_file)
 schema = OmegaConf.structured(AppConfig)
 app_config: AppConfig = OmegaConf.to_object(OmegaConf.merge(schema, context))
-
-if __name__ == '__main__':
-    print(app_config.es.host)

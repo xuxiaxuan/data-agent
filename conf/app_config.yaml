@@ -13,14 +13,14 @@ db_meta:
   host: localhost
   port: 3306
   user: root
-  password: 050710xxx
+  password: ${env:DB_META_PASSWORD}
   database: meta
 
 db_dw:
   host: localhost
   port: 3306
   user: root
-  password: 050710xxx
+  password: ${env:DB_DW_PASSWORD}
   database: dw
 
 qdrant:
@@ -42,5 +42,5 @@ es:
 
 llm:
   model_name: qwen2.5:3b
-  api_key: "" # ollama本地无需密钥，填空即可
+  api_key: ${env:LLM_API_KEY} # ollama本地无需密钥，留空即可
   base_url: http://localhost:11434

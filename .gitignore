@@ -21,8 +21,9 @@ env/
 *.swo
 *~
 
-# Docker
-docker/
+# Docker（保留 compose/Dockerfile 跟踪，忽略大体积资源）
+docker/elasticsearch/plugins/
+docker/embedding/
 
 # Environment & Secrets
 .env
