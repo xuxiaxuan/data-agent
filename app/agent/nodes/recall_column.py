@@ -1,4 +1,3 @@
-from langchain_classic.chains.question_answering.map_rerank_prompt import output_parser
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langgraph.runtime import Runtime
