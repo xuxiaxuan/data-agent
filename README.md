@@ -52,7 +52,11 @@ data-agent/
 │   └── services/               #   业务服务层
 ├── conf/                       # 配置文件
 │   ├── app_config.yaml         #   应用主配置
-│   └── meta_config.yaml        #   元数据知识库配置
+│   ├── meta_config.yaml        #   元数据知识库配置
+│   └── eval_config.yaml        #   评测专用配置
+├── app/eval/                   # 评测模块（RAGAS + 自定义指标）
+├── eval/                       # 评测数据与结果（results/reports 被忽略）
+│   └── datasets/text2sql_eval.jsonl
 ├── prompts/                    # Prompt 模板（生成/校验/纠错 SQL 等）
 ├── data-agent-frontend/        # 前端项目（Vue 3 + Vite）
 ├── main.py                     # 后端入口（端口 8000）
@@ -140,3 +144,55 @@ npm run dev
 | `extend_keywords_for_column_recall.prompt` | 字段召回关键词扩展 |
 | `extend_keywords_for_value_recall.prompt` | 取值召回关键词扩展 |
 | `extend_keywords_for_metric_recall.prompt` | 指标召回关键词扩展 |
+
+## 评测（RAGAS + 自定义指标）
+
+基于 RAGAS 的多维评测系统，**业务代码零侵入**：通过 `graph.astream` 的双 stream_mode（`updates` + `custom`）捕获 Agent 中间产物（召回字段 / 指标 / SQL / 执行结果），不改 `app/agent` `app/services` 等业务代码。
+
+### 评测范围
+
+- **召回质量**：字段召回（precision / recall）、指标召回（precision / recall）
+- **SQL 质量**：Execution Accuracy (EX)、Valid Syntax Rate (VSR)、Correction Success Rate (CSR)
+
+评测 LLM 使用 **GLM-5.2 via 智谱 Anthropic 兼容端点**；召回指标同时输出 RAGAS（LLM 评分）与严格集合匹配（确定性基线）两套结果。
+
+### 评测数据集
+
+- 位置：`eval/datasets/text2sql_eval.jsonl`（33 条，入 git）
+- 覆盖 7 个维度：单表（3）/ 单维分组（8）/ 多维交叉（6）/ 指标（4）/ 过滤（6）/ 排序（3）/ 边界（3）
+- 数据边界严格遵循 `docker/mysql/dw.sql`：仅 2025 Q1、5 大区、4 档会员等级、6 个品类
+- 每条 ground_truth SQL 在 dw 库执行通过（生成器自检）
+
+### 运行评测
+
+```bash
+# 1. 安装新增依赖
+uv sync
+
+# 2. 配置 .env 中的评测 LLM（GLM-5.2）
+#    EVAL_LLM_API_KEY=...        智谱 API Key
+#    EVAL_LLM_BASE_URL=https://open.bigmodel.cn/api/anthropic
+#    EVAL_LLM_MODEL=glm-5.2
+
+# 3. 确保元数据知识库已建立（参考 app/scripts/build_meta_knowledge.py）
+#    且本地服务（MySQL/Qdrant/ES/Ollama/Embedding）已运行
+
+# 4. 重新生成评测集（可选，含 ground_truth SQL 自检）
+python -m app.scripts.gen_eval_dataset
+
+# 5. 冒烟测试（前 3 条，跳过 RAGAS LLM 评测）
+python -m app.scripts.run_ragas_eval --limit 3 --skip-ragas
+
+# 6. 完整评测
+python -m app.scripts.run_ragas_eval
+```
+
+### 评测产物
+
+- `eval/results/raw_<timestamp>.jsonl`：每条样本的中间产物 + 全部指标明细（`.gitignore` 忽略）
+- `eval/reports/report_<timestamp>.md`：Markdown 报告，含全局指标 + 按 category 分组聚合（`.gitignore` 忽略）
+
+### 已知问题
+
+- `meta_config.yaml:175` 中 AOV 的 `relevant_columns` 误写为 `fact_order.order_quantity`，评测集 ground_truth 按 AOV 真实语义（`AVG(fact_order.order_amount)`）标注；该问题仅标注不修复，避免侵入业务代码。
+- 评测依赖本地 Ollama / Qdrant / ES / MySQL，`concurrency=1` 串行执行避免资源争抢。

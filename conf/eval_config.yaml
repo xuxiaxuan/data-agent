@@ -1,0 +1,30 @@
+# RAGAS 评测专用配置
+# 业务代码零侵入：仅被 app/eval/* 与 app/scripts/run_ragas_eval.py 读取
+eval:
+  # 数据集与产物路径（相对项目根目录）
+  dataset_path: eval/datasets/text2sql_eval.jsonl
+  result_dir: eval/results
+  report_dir: eval/reports
+
+  # 并发度：本地 ollama / qdrant 资源有限，强制串行避免压垮
+  concurrency: 1
+
+  # 启用的指标分两组：召回 + SQL
+  metrics:
+    recall:
+      - context_precision
+      - context_recall
+    sql:
+      - execution_accuracy
+      - valid_syntax_rate
+      - correction_success_rate
+
+  # 评测 LLM 兜底参数（实际 API Key/Model/BaseURL 优先从 .env 读取）
+  llm:
+    temperature: 0
+    max_tokens: 4096
+
+  # 数据集生成器相关
+  generator:
+    # ground_truth SQL 自检：生成时在 dw 库执行，失败则告警但不中断
+    self_check: true

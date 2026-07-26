@@ -52,3 +52,7 @@ htmlcov/
 
 # uv
 .python-version
+
+# Evaluation results（含可能的敏感数据/大文件）
+eval/results/
+eval/reports/
